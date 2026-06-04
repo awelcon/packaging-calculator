@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Warehouse Package Counter</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08101f;
+      --surface: #121b2d;
+      --surface-strong: #17263b;
+      --surface-soft: rgba(255,255,255,0.06);
+      --text: #eef2ff;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56,189,248,0.18);
+      --danger: #fb7185;
+      --border: rgba(148,163,184,0.18);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      max-height: 100dvh;
+      overflow: hidden;
+      background: radial-gradient(circle at top, rgba(56,189,248,0.16), transparent 35%),
+        linear-gradient(180deg, #06101f 0%, #091424 100%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: env(safe-area-inset-top) 8px env(safe-area-inset-bottom) 8px;
+    }
+
+    .page-shell {
+      width: 100%;
+      max-width: 760px;
+      height: 100%;
+      display: grid;
+      grid-template-rows: min-content 1fr;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0 2px;
+      min-height: 48px;
+    }
+
+    .headline {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .headline .title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .headline .subtitle {
+      margin: 0;
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      min-width: 0;
+    }
+
+    .top-action {
+      border: 1px solid transparent;
+      background: var(--accent-soft);
+      color: var(--text);
+      padding: 10px 11px;
+      border-radius: 14px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+      min-width: 64px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .top-action:hover,
+    .top-action:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(56,189,248,0.45);
+      outline: none;
+      background: rgba(56,189,248,0.24);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .card {
+      position: relative;
+      padding: 12px 10px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.18);
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      min-height: 0;
+    }
+
+    .card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(56,189,248,0.35);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 0.94rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .counter-value {
+      margin-top: 10px;
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1;
+      color: #f8fafc;
+      letter-spacing: -0.03em;
+    }
+
+    .card-meta {
+      margin-top: 4px;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .card-btn {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(15,23,42,0.92);
+      color: #cbd5e1;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+    }
+
+    .card-btn:hover,
+    .card-btn:focus-visible {
+      transform: scale(1.05);
+      background: rgba(56,189,248,0.18);
+      color: #f8fafc;
+      outline: none;
+    }
+
+    .card-reset {
+      top: 10px;
+      right: 10px;
+    }
+
+    .card-decrement {
+      bottom: 10px;
+      left: 10px;
+    }
+
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.58);
+      padding: 16px 10px;
+      z-index: 30;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-panel {
+      width: 100%;
+      max-width: 720px;
+      max-height: 86%;
+      display: flex;
+      flex-direction: column;
+      border-radius: 20px;
+      background: #0f172a;
+      border: 1px solid rgba(148,163,184,0.18);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid rgba(148,163,184,0.12);
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: 0.98rem;
+      font-weight: 700;
+    }
+
+    .close-modal {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(15,23,42,0.9);
+      color: var(--text);
+      font-size: 1.1rem;
+      line-height: 1;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+
+    .history-scroll {
+      overflow-y: auto;
+      padding: 12px 14px 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .history-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .group-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .entry-card {
+      padding: 12px 12px 10px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(148,163,184,0.12);
+      display: grid;
+      gap: 8px;
+    }
+
+    .entry-line span {
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    .entry-controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .small-btn {
+      border: 1px solid transparent;
+      border-radius: 12px;
+      background: rgba(56,189,248,0.14);
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .small-btn:hover,
+    .small-btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(56,189,248,0.45);
+      outline: none;
+      background: rgba(56,189,248,0.24);
+    }
+
+    .delete-btn {
+      background: rgba(251,113,133,0.16);
+      color: #fda4af;
+    }
+
+    .delete-btn:hover,
+    .delete-btn:focus-visible {
+      background: rgba(251,113,133,0.24);
+    }
+
+    .bottom-note {
+      font-size: 0.74rem;
+      color: var(--muted);
+      padding: 0 14px 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 420px) {
+      body {
+        padding: env(safe-area-inset-top) 6px env(safe-area-inset-bottom) 6px;
+      }
+
+      .topbar {
+        gap: 6px;
+        padding: 5px 0 2px;
+      }
+
+      .headline .title {
+        font-size: 0.98rem;
+      }
+
+      .headline .subtitle {
+        font-size: 0.7rem;
+      }
+
+      .top-action {
+        padding: 9px 10px;
+        font-size: 0.78rem;
+        min-width: 58px;
+      }
+
+      .card {
+        padding: 10px 8px;
+      }
+
+      .card-title {
+        font-size: 0.9rem;
+      }
+
+      .counter-value {
+        font-size: 2rem;
+      }
+
+      .card-btn {
+        width: 28px;
+        height: 28px;
+      }
+
+      .modal-panel {
+        max-height: 88%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <div class="topbar">
+      <div class="headline">
+        <p class="title">Счетчик отправки</p>
+        <p class="subtitle">Рабочее окно без прокрутки.</p>
+      </div>
+      <div class="button-group">
+        <button class="top-action" id="resetAll">Reset All</button>
+        <button class="top-action" id="saveSession">Save Session</button>
+        <button class="top-action" id="showHistory">History</button>
+      </div>
+    </div>
+
+    <div class="grid" id="cardGrid"></div>
+  </div>
+
+  <div class="modal" id="historyModal" aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+      <div class="modal-header">
+        <h2 class="modal-title" id="historyTitle">Історія сесій</h2>
+        <button class="close-modal" id="closeHistory" aria-label="Close history">×</button>
+      </div>
+      <div class="history-scroll" id="historyScroll"></div>
+      <p class="bottom-note">Tap copy to export summary text for Telegram.</p>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY_COUNTS = 'warehouseCounts';
+    const STORAGE_KEY_HISTORY = 'warehouseHistory';
+
+    const cards = [
+      { id: 'pkg-2', label: 'Пакет 2 кг' },
+      { id: 'pkg-4', label: 'Пакет 4 кг' },
+      { id: 'box-10', label: 'Коробка 10 кг' },
+      { id: 'box-15', label: 'Коробка 15 кг' },
+      { id: 'box-20', label: 'Коробка 20 кг' },
+      { id: 'box-30', label: 'Коробка 30 кг' }
+    ];
+
+    const counts = loadCounts();
+    let history = loadHistory();
+
+    const cardGrid = document.getElementById('cardGrid');
+    const historyModal = document.getElementById('historyModal');
+    const historyScroll = document.getElementById('historyScroll');
+
+    function createInitialCounts() {
+      return cards.reduce((acc, card) => {
+        acc[card.id] = 0;
+        return acc;
+      }, {});
+    }
+
+    function loadCounts() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_COUNTS);
+        if (!raw) return createInitialCounts();
+        const parsed = JSON.parse(raw);
+        return { ...createInitialCounts(), ...parsed };
+      } catch {
+        return createInitialCounts();
+      }
+    }
+
+    function saveCounts() {
+      localStorage.setItem(STORAGE_KEY_COUNTS, JSON.stringify(counts));
+    }
+
+    function loadHistory() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_HISTORY);
+        if (!raw) return [];
+        return JSON.parse(raw);
+      } catch {
+        return [];
+      }
+    }
+
+    function saveHistory() {
+      localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
+    }
+
+    function formatDate(date = new Date()) {
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}.${month}.${year}`;
+    }
+
+    function renderCards() {
+      cardGrid.innerHTML = cards.map(card => `
+        <article class="card" data-id="${card.id}">
+          <button class="card-btn card-reset" data-action="reset" data-id="${card.id}" aria-label="Reset ${card.label}">✕</button>
+          <button class="card-btn card-decrement" data-action="decrement" data-id="${card.id}" aria-label="Decrease ${card.label}">−</button>
+          <p class="card-title">${card.label}</p>
+          <p class="counter-value" id="count-${card.id}">${counts[card.id]}</p>
+          <p class="card-meta">Tap card to +1</p>
+        </article>
+      `).join('');
+    }
+
+    function setCount(id, value) {
+      counts[id] = Math.max(0, value);
+      const el = document.getElementById(`count-${id}`);
+      if (el) el.textContent = counts[id];
+      saveCounts();
+    }
+
+    function increment(id) {
+      setCount(id, counts[id] + 1);
+    }
+
+    function decrement(id) {
+      setCount(id, counts[id] - 1);
+    }
+
+    function resetCard(id) {
+      setCount(id, 0);
+    }
+
+    function resetAll() {
+      cards.forEach(card => setCount(card.id, 0));
+    }
+
+    function saveSession() {
+      const entry = {
+        date: formatDate(),
+        values: cards.reduce((acc, card) => {
+          acc[card.label] = counts[card.id];
+          return acc;
+        }, {})
+      };
+      history.unshift(entry);
+      saveHistory();
+      renderHistory();
+      resetAll();
+    }
+
+    function buildCopyText(entry) {
+      const lines = cards.map(card => `${card.label}: ${entry.values[card.label]} шт;`);
+      return `${entry.date}\n${lines.join(' ')}`;
+    }
+
+    function copyEntryText(index) {
+      const entry = history[index];
+      const text = buildCopyText(entry);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => window.prompt('Copy text', text));
+      } else {
+        window.prompt('Copy text', text);
+      }
+    }
+
+    function deleteEntry(index) {
+      if (!confirm('Delete this saved session?')) return;
+      history.splice(index, 1);
+      saveHistory();
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (!history.length) {
+        historyScroll.innerHTML = `
+          <div class="history-group">
+            <div class="group-title">No saved sessions</div>
+            <div class="entry-card">
+              <div class="entry-line"><span>Save a session to keep history here.</span></div>
+            </div>
+          </div>`;
+        return;
+      }
+
+      const grouped = history.reduce((acc, entry, index) => {
+        acc[entry.date] = acc[entry.date] || [];
+        acc[entry.date].push({ entry, index });
+        return acc;
+      }, {});
+
+      historyScroll.innerHTML = Object.entries(grouped).map(([date, items]) => `
+        <div class="history-group">
+          <div class="group-title">${date} (${items.length})</div>
+          ${items.map(({ entry, index }) => `
+            <div class="entry-card">
+              <div class="entry-line">
+                ${cards.map(card => `<span>${card.label}: ${entry.values[card.label]} шт;</span>`).join(' ')}
+              </div>
+              <div class="entry-controls">
+                <button class="small-btn" data-copy="${index}">Copy text</button>
+                <button class="small-btn delete-btn" data-delete="${index}">Delete</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+
+    cardGrid.addEventListener('click', event => {
+      const button = event.target.closest('[data-action]');
+      if (button) {
+        event.stopPropagation();
+        const id = button.dataset.id;
+        const action = button.dataset.action;
+        if (action === 'reset') resetCard(id);
+        if (action === 'decrement') decrement(id);
+        return;
+      }
+      const card = event.target.closest('.card');
+      if (!card) return;
+      increment(card.dataset.id);
+    });
+
+    document.getElementById('resetAll').addEventListener('click', resetAll);
+    document.getElementById('saveSession').addEventListener('click', saveSession);
+    document.getElementById('showHistory').addEventListener('click', () => {
+      renderHistory();
+      historyModal.classList.add('open');
+      historyModal.setAttribute('aria-hidden', 'false');
+    });
+    document.getElementById('closeHistory').addEventListener('click', () => {
+      historyModal.classList.remove('open');
+      historyModal.setAttribute('aria-hidden', 'true');
+    });
+    historyModal.addEventListener('click', event => {
+      if (event.target === historyModal) {
+        historyModal.classList.remove('open');
+        historyModal.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    historyScroll.addEventListener('click', event => {
+      const copyBtn = event.target.closest('[data-copy]');
+      if (copyBtn) {
+        copyEntryText(Number(copyBtn.dataset.copy));
+        return;
+      }
+      const deleteBtn = event.target.closest('[data-delete]');
+      if (deleteBtn) {
+        deleteEntry(Number(deleteBtn.dataset.delete));
+      }
+    });
+
+    renderCards();
+  </script>
+</body>
+</html>
