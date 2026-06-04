@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <title>Warehouse Package Counter</title>
   <style>
     :root {
@@ -24,6 +24,11 @@
       box-sizing: border-box;
       user-select: none;
       -webkit-user-select: none;
+    }
+
+    button,
+    .card {
+      touch-action: manipulation;
     }
 
     html {
