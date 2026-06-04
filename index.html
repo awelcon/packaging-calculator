@@ -417,7 +417,7 @@
       <div class="headline">
         <p class="title">Счетчик отправки</p>
         <p class="subtitle">Рабочее окно без прокрутки.</p>
-        <span class="app-version">v1.1</span>
+        <span class="app-version">v1.2</span>
       </div>
       <div class="button-group">
         <button class="top-action" id="resetAll">Reset All</button>
@@ -654,6 +654,34 @@
         deleteEntry(Number(deleteBtn.dataset.delete));
       }
     });
+
+    let lastTouchTime = 0;
+    let lastTouchTarget = null;
+
+    function handleTouchStart(event) {
+      const now = Date.now();
+      const tapped = event.target.closest('.card, button');
+      if (!tapped) {
+        lastTouchTime = now;
+        lastTouchTarget = null;
+        return;
+      }
+
+      if (now - lastTouchTime < 300 && lastTouchTarget === tapped) {
+        event.preventDefault();
+
+        if (tapped.classList.contains('card')) {
+          increment(tapped.dataset.id);
+        } else if (tapped.tagName === 'BUTTON') {
+          tapped.click();
+        }
+      }
+
+      lastTouchTime = now;
+      lastTouchTarget = tapped;
+    }
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: false });
 
     renderCards();
   </script>
